@@ -1,16 +1,16 @@
-// ===== Catalog storage (LocalStorage + import/export) =====
-const CAT_KEY = 'loxqty.catalog.v2';
+// ===== Catalog storage (LocalStorage + import/export stub kept) =====
 const DEFAULT_CATALOG = [
-  // Example hierarchy: Grupė: 'Valdikliai', Šeima: 'Tree', Spalva: 'White/Anthracite' (pasikeisk pagal poreikį)
-  { id: "miniserver", label: "Loxone Miniserver (Tree)", cat:"Valdikliai", family:"Tree", color:"-", sku:"", unit:"vnt", price:0, icon:"🧠" },
-  { id: "tree_ext",   label: "Tree Extension",           cat:"Valdikliai", family:"Tree", color:"-", sku:"", unit:"vnt", price:0, icon:"🌳" },
-  { id: "touch_w",    label: "Touch Tree (White)",       cat:"Jungikliai", family:"Touch", color:"White", sku:"", unit:"vnt", price:0, icon:"🖐️" },
-  { id: "touch_a",    label: "Touch Tree (Anthracite)",  cat:"Jungikliai", family:"Touch", color:"Anthracite", sku:"", unit:"vnt", price:0, icon:"🖐️" },
-  { id: "presence",   label: "Presence Sensor Tree",     cat:"Jutikliai",  family:"Presence", color:"-", sku:"", unit:"vnt", price:0, icon:"👁️" },
-  { id: "rgbw",       label: "RGBW 24V Dimmer Tree",     cat:"Apšvietimas", family:"RGBW", color:"-", sku:"", unit:"vnt", price:0, icon:"💡" },
-  { id: "nano2r",     label: "Nano 2 Relay Tree",        cat:"Vykdymas",   family:"Relay", color:"-", sku:"", unit:"vnt", price:0, icon:"⚙️" },
-  { id: "nano_di",    label: "Nano DI Tree (6 DI)",      cat:"Įėjimai",    family:"DI", color:"-", sku:"", unit:"vnt", price:0, icon:"⎇" }
+  // Loxone Tree — pavyzdžiai su SKU (kainas susivesk pagal savo kainyną)
+  { id: "miniserver", label: "Loxone Miniserver (Gen2)", group:"Valdikliai", family:"Miniserver", color:"-", sku:"100480", unit:"vnt", price:0, icon:"🧠" },
+  { id: "tree_ext",   label: "Tree Extension", group:"Valdikliai", family:"Tree", color:"-", sku:"100014", unit:"vnt", price:0, icon:"🌳" },
+  { id: "touch_tree_w", label:"Touch Tree (White)", group:"Valdikliai", family:"Touch", color:"White", sku:"100484", unit:"vnt", price:0, icon:"🖐️" },
+  { id: "touch_tree_an", label:"Touch Tree (Anthracite)", group:"Valdikliai", family:"Touch", color:"Anthracite", sku:"100485", unit:"vnt", price:0, icon:"🖐️" },
+  { id: "presence_tree", label:"Presence Sensor Tree", group:"Jutikliai", family:"Presence", color:"White", sku:"100376", unit:"vnt", price:0, icon:"👁️" },
+  { id: "rgbw_tree", label:"RGBW 24V Dimmer Tree", group:"Apšvietimas", family:"RGBW", color:"-", sku:"100215", unit:"vnt", price:0, icon:"💡" },
+  { id: "nano_2relay", label:"Nano 2 Relay Tree", group:"Valdikliai", family:"Nano", color:"-", sku:"100200", unit:"vnt", price:0, icon:"⚙️" },
+  { id: "nano_di", label:"Nano DI Tree (6 DI)", group:"Valdikliai", family:"Nano", color:"-", sku:"100269", unit:"vnt", price:0, icon:"⎇" }
 ];
+const CAT_KEY = 'loxqty.catalog.v2';
 function loadCatalog() { try { return JSON.parse(localStorage.getItem(CAT_KEY)) || DEFAULT_CATALOG; } catch { return DEFAULT_CATALOG; } }
 function saveCatalog(cat) { localStorage.setItem(CAT_KEY, JSON.stringify(cat)); }
 
@@ -33,6 +33,9 @@ const dropHint = document.getElementById('dropHint');
 const totalsBody = document.querySelector('#totals tbody');
 const grandTotalCell = document.getElementById('grandTotal');
 const scaleLabel = document.getElementById('scaleLabel');
+const fGroup = document.getElementById('fGroup');
+const fFamily = document.getElementById('fFamily');
+const fColor = document.getElementById('fColor');
 
 const state = {
   activeTool: null,
@@ -43,67 +46,57 @@ const state = {
   pdfData: null // Uint8Array
 };
 
-// ===== Tree filters =====
-const fCat = document.getElementById('fCat');
-const fFamily = document.getElementById('fFamily');
-const fColor = document.getElementById('fColor');
-
-function unique(list, key) {
-  return [...new Set(list.map(x => x[key] || '-'))];
+// ===== Filters (Group → Family → Color) =====
+function unique(values){ return Array.from(new Set(values.filter(Boolean))); }
+function rebuildFilters(){
+  const cur = getFilterValues();
+  const groups = unique(CATALOG.map(c=>c.group||''));
+  fillSelect(fGroup, groups, cur.group);
+  const fams = unique(CATALOG.filter(c=>!cur.group || c.group===cur.group).map(c=>c.family||''));
+  fillSelect(fFamily, fams, cur.family);
+  const cols = unique(CATALOG.filter(c=>(!cur.group || c.group===cur.group) && (!cur.family || c.family===cur.family)).map(c=>c.color||''));
+  fillSelect(fColor, cols, cur.color);
+  renderCatalog(); // refilter
 }
-function fillFilters() {
-  const cats = unique(CATALOG, 'cat');
-  fCat.innerHTML = '<option value="">— visos —</option>' + cats.map(c=>`<option>${c}</option>`).join('');
-  updateFamily();
+function fillSelect(sel, opts, selected){
+  const val = selected || '';
+  sel.innerHTML = '<option value="">—</option>' + opts.map(o=>`<option value="${o}">${o||'—'}</option>`).join('');
+  sel.value = val;
 }
-function updateFamily() {
-  const cat = fCat.value;
-  const filtered = CATALOG.filter(i => !cat || i.cat === cat);
-  const fams = unique(filtered, 'family');
-  fFamily.innerHTML = '<option value="">— visos —</option>' + fams.map(c=>`<option>${c}</option>`).join('');
-  updateColor();
-}
-function updateColor() {
-  const cat = fCat.value, fam = fFamily.value;
-  const filtered = CATALOG.filter(i => (!cat || i.cat===cat) && (!fam || i.family===fam));
-  const colors = unique(filtered, 'color');
-  fColor.innerHTML = '<option value="">— visos —</option>' + colors.map(c=>`<option>${c}</option>`).join('');
+function getFilterValues(){ return { group:fGroup.value||'', family:fFamily.value||'', color:fColor.value||'' }; }
+[fGroup, fFamily, fColor].forEach(sel => sel.addEventListener('change', () => {
+  // cascade: if group changed, clear family/color when no longer valid
+  const cur = getFilterValues();
+  if (sel===fGroup) { fFamily.value=''; fColor.value=''; }
+  if (sel===fFamily) { fColor.value=''; }
   renderCatalog();
-}
-[fCat, fFamily, fColor].forEach(sel => sel.addEventListener('change', e => {
-  if (sel === fCat) updateFamily();
-  else if (sel === fFamily) updateColor();
-  else renderCatalog();
+  rebuildFilters(); // keep options in sync
 }));
-fillFilters();
 
 // ===== Catalog UI =====
 const catalogWrap = document.getElementById('catalog');
 function renderCatalog() {
-  const cat = fCat.value, fam = fFamily.value, col = fColor.value;
+  const {group, family, color} = getFilterValues();
+  const list = CATALOG.filter(c=> (!group||c.group===group) && (!family||c.family===family) && (!color||c.color===color));
   catalogWrap.innerHTML = '';
-  CATALOG
-    .filter(i => (!cat || i.cat===cat) && (!fam || i.family===fam) && (!col || i.color===col))
-    .forEach(item => {
-      const el = document.createElement('div');
-      el.className = 'catalog-item';
-      el.dataset.id = item.id;
-      el.innerHTML = `
-        <div class="left">
-          <div class="catalog-icon">${item.icon || '●'}</div>
-          <div class="catalog-meta">
-            <strong>${item.label}</strong>
-            <small>${item.cat} › ${item.family}${item.color && item.color!=='-' ? ' › ' + item.color : ''}</small>
-            <small>SKU: ${item.sku || '-'}</small>
-          </div>
-        </div>
-        <div class="price">€${item.price} / ${item.unit||'vnt'}</div>
-      `;
-      el.addEventListener('click', () => setActiveTool(item.id));
-      catalogWrap.appendChild(el);
-    });
+  list.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'catalog-item';
+    el.dataset.id = item.id;
+    el.innerHTML = `
+      <div class="catalog-icon">${item.icon || '●'}</div>
+      <div class="catalog-meta">
+        <strong>${item.label}</strong>
+        <small>${item.group||'—'} › ${item.family||'—'} › ${item.color||'—'} • SKU ${item.sku||'-'} • ${item.unit||'vnt'} • €${item.price??0}</small>
+      </div>
+    `;
+    el.addEventListener('click', () => setActiveTool(item.id));
+    catalogWrap.appendChild(el);
+  });
 }
 renderCatalog();
+rebuildFilters();
+
 function setActiveTool(id) {
   state.activeTool = id;
   document.querySelectorAll('.catalog-item').forEach(n => n.classList.toggle('active', n.dataset.id === id));
@@ -229,21 +222,13 @@ function showTip(text,clientX,clientY){ const t=document.getElementById('tooltip
 function updateTotals(){
   const counts={}; Object.values(state.pages).forEach(p=>p.markers.forEach(m=>counts[m.id]=(counts[m.id]||0)+1));
   totalsBody.innerHTML=''; let grand=0;
-  CATALOG.forEach(c=>{
-    const n=counts[c.id]||0;
-    if(n>0){
-      const sum=n*c.price; grand+=sum;
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${c.label}</td><td>${c.sku||'-'}</td><td>${n}</td><td>${c.price}</td><td>${sum}</td>`;
-      totalsBody.appendChild(tr);
-    }
-  });
+  CATALOG.forEach(c=>{ const n=counts[c.id]||0; if(n>0){ const sum=n*c.price; grand+=sum; const tr=document.createElement('tr'); tr.innerHTML=`<td>${c.label}</td><td>${c.sku||'-'}</td><td>${n}</td><td>${c.price??0}</td><td>${sum}</td>`; totalsBody.appendChild(tr); }});
   grandTotalCell.textContent=grand;
 }
 document.getElementById('exportCSV').onclick=()=>{
   const counts={}; Object.values(state.pages).forEach(p=>p.markers.forEach(m=>counts[m.id]=(counts[m.id]||0)+1));
   const rows=[['Tipas','SKU','Vnt','Kaina/vnt','Suma']]; let total=0;
-  CATALOG.forEach(c=>{ const n=counts[c.id]||0; if(n>0){ const sum=n*c.price; total+=sum; rows.push([c.label, c.sku||'-', String(n), String(c.price), String(sum)]); }});
+  CATALOG.forEach(c=>{ const n=counts[c.id]||0; if(n>0){ const sum=n*c.price; total+=sum; rows.push([c.label, c.sku||'-', String(n), String(c.price??0), String(sum)]); }});
   rows.push(['','','','Iš viso',String(total)]);
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\\n');
   downloadBlob(csv,'samata.csv','text/csv;charset=utf-8');
@@ -268,11 +253,12 @@ function mergeCanvases(){ const out=document.createElement('canvas'); out.width=
 function downloadURL(url,filename){ const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); }
 function downloadBlob(content,filename,type){ const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); downloadURL(url,filename); URL.revokeObjectURL(url); }
 
-// ===== Save/Load project with embedded PDF and catalog =====
+// ===== Save project with embedded PDF and catalog snapshot =====
 document.getElementById('saveProject').onclick = async () => {
+  // Ensure we have raw PDF bytes; try to fetch from pdfDoc if needed
   let pdfArr = state.pdfData;
   if ((!pdfArr || !pdfArr.length) && pdfDoc && pdfDoc.getData) {
-    try { pdfArr = new Uint8Array(await pdfDoc.getData()); } catch {}
+    try { const data = await pdfDoc.getData(); pdfArr = new Uint8Array(data); } catch {}
   }
   if (!pdfArr || !pdfArr.length) { alert('PDF baitų nėra. Įkelk PDF ir bandyk dar kartą.'); return; }
 
@@ -281,9 +267,7 @@ document.getElementById('saveProject').onclick = async () => {
     meta: { savedAt: new Date().toISOString() },
     pdf: { name: state.pdfName || 'planas.pdf', dataBase64: uint8ToBase64(pdfArr) },
     catalog: CATALOG,
-    state: {
-      activeTool: state.activeTool, scalePxPerMeter: state.scalePxPerMeter, snap: state.snap, pages: state.pages
-    }
+    state: { activeTool: state.activeTool, scalePxPerMeter: state.scalePxPerMeter, snap: state.snap, pages: state.pages }
   };
   const jsonStr = JSON.stringify(project);
   downloadBlob(jsonStr, (state.pdfName ? state.pdfName.replace(/\.pdf$/i,'') : 'projektas') + '_samata.json', 'application/json');
@@ -295,7 +279,8 @@ document.getElementById('loadProject').addEventListener('change', async (e) => {
   try { obj = JSON.parse(await f.text()); } catch(err){ alert('Blogas projekto failas.'); return; }
   if (!obj || !obj.pdf || !obj.pdf.dataBase64) { alert('Projekte nerastas įterptas PDF.'); return; }
 
-  if (Array.isArray(obj.catalog)) { CATALOG = obj.catalog; saveCatalog(CATALOG); fillFilters(); }
+  if (Array.isArray(obj.catalog)) { CATALOG = obj.catalog; saveCatalog(CATALOG); renderCatalog(); rebuildFilters(); }
+
   state.activeTool = obj.state?.activeTool || null;
   state.scalePxPerMeter = obj.state?.scalePxPerMeter || null;
   state.snap = obj.state?.snap !== false;
@@ -306,9 +291,9 @@ document.getElementById('loadProject').addEventListener('change', async (e) => {
 
   await openPdfArray(state.pdfData);
   updateTotals();
-  renderCatalog();
 });
 
+// Download original PDF
 document.getElementById('downloadOriginal').onclick = () => {
   if (!state.pdfData || !state.pdfData.length) { alert('PDF baitų nėra. Įkelk projektą arba PDF.'); return; }
   const blob = new Blob([state.pdfData], { type: 'application/pdf' });
@@ -321,22 +306,23 @@ document.getElementById('downloadOriginal').onclick = () => {
 const modal = document.getElementById('catalogModal');
 const catRows = document.getElementById('catRows');
 document.getElementById('openCatalog').onclick = () => {
-  catRows.innerHTML='';
-  CATALOG.forEach(c => addRow(c));
+  // fill rows
+  catRows.innerHTML = '';
+  CATALOG.forEach((c) => addRow(c));
   modal.showModal();
 };
-document.getElementById('cancelModal').onclick = () => { modal.close(); };
-document.getElementById('addRow').onclick = () => addRow({ id:'', label:'', cat:'', family:'', color:'-', sku:'', unit:'vnt', price:0, icon:'●' });
+document.getElementById('closeModal').onclick = () => modal.close();
+document.getElementById('addRow').onclick = () => addRow({ id:'', label:'', group:'', family:'', color:'', sku:'', unit:'vnt', price:0, icon:'●' });
 
 function addRow(item) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><input value="${item.id||''}" data-f="id" placeholder="id"></td>
     <td><input value="${item.label||''}" data-f="label" placeholder="pavadinimas"></td>
-    <td><input value="${item.cat||''}" data-f="cat" placeholder="Grupė (pvz. Valdikliai)"></td>
-    <td><input value="${item.family||''}" data-f="family" placeholder="Šeima (pvz. Tree/Touch)"></td>
-    <td><input value="${item.color||'-'}" data-f="color" placeholder="Spalva (pvz. White)"></td>
-    <td><input value="${item.sku||''}" data-f="sku" placeholder="Gamintojo kodas"></td>
+    <td><input value="${item.group||''}" data-f="group" placeholder="grupė"></td>
+    <td><input value="${item.family||''}" data-f="family" placeholder="šeima"></td>
+    <td><input value="${item.color||''}" data-f="color" placeholder="spalva"></td>
+    <td><input value="${item.sku||''}" data-f="sku" placeholder="gamintojo kodas"></td>
     <td><input value="${item.unit||'vnt'}" data-f="unit" placeholder="vnt"></td>
     <td><input value="${item.price??0}" data-f="price" type="number" step="0.01"></td>
     <td><input value="${item.icon||'●'}" data-f="icon" placeholder="ikona"></td>
@@ -359,32 +345,11 @@ document.getElementById('catalogForm').addEventListener('submit', (e) => {
   }).filter(r => r.id && r.label);
   CATALOG = next;
   saveCatalog(CATALOG);
-  fillFilters();
-  renderCatalog();
+  renderCatalog(); rebuildFilters();
   modal.close();
 });
 
-document.getElementById('exportCatalog').onclick = () => {
-  const json = JSON.stringify({ version:2, catalog: CATALOG }, null, 2);
-  downloadBlob(json, 'katalogas.json', 'application/json');
-};
-document.getElementById('importCatalog').addEventListener('change', async (e) => {
-  const f = e.target.files[0]; if(!f) return;
-  try {
-    const obj = JSON.parse(await f.text());
-    const list = Array.isArray(obj) ? obj : obj.catalog;
-    if (!Array.isArray(list)) throw new Error('Blogas katalogo formatas');
-    CATALOG = list;
-    saveCatalog(CATALOG);
-    fillFilters();
-    renderCatalog();
-    alert('Katalogas įkeltas.');
-  } catch (err) {
-    alert('Nepavyko įkelti katalogo: ' + (err?.message || err));
-  }
-});
-
-// ===== Utils =====
+// Utils
 function uint8ToBase64(u8){
   let binary=''; const chunk=0x8000;
   for(let i=0;i<u8.length;i+=chunk){ const sub=u8.subarray(i, i+chunk); binary += String.fromCharCode.apply(null, sub); }

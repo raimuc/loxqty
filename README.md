@@ -1,18 +1,19 @@
 # loxqty (GitHub Pages)
 
-- PDF brėžinių anotavimas ir sąmatų skaičiavimas.
-- Katalogas su **hierarchija** (Grupė → Šeima → Spalva) ir **gamintojo kodu (SKU)**.
-- Katalogo redagavimas rankiniu būdu (LocalStorage) + import/export JSON.
-- Projektų išsaugojimas su **įterptu PDF** (base64) — atidarius `.json`, PDF nereikia rinkti.
-- PNG eksportas (po puslapį) ir PDF eksportas (per spausdinimo dialogą).
+Statinis įrankis PDF brėžinių anotavimui ir sąmatų skaičiavimui.
 
-## GitHub Pages
-- Failai veikia iš karto; PDF.js kraunamas iš `./vendor/pdf.mjs`, o jei jo nėra — automatiškai iš CDN.
-- Jei reikia „offline“, įkelk į `vendor/`:
-  - `pdf.mjs`
-  - `pdf.worker.mjs`
+## Privalumai
+- Katalogo redagavimas (hierarchija Group → Family → Color, SKU, kaina, ikona), saugoma `localStorage`, yra import/export JSON.
+- Žymų dėjimas, linijų braižymas (Shift), Snap 45°/90°.
+- Suvestinė + CSV eksportas (įtraukia SKU).
+- PNG eksportas (vienas PNG per puslapį).
+- PDF eksportas (per naršyklės spausdinimo dialogą).
+- Projekto išsaugojimas su **įterptu PDF** (base64) ir katalogo momentine kopija — atidarius `.json`, PDF nebereikia rinkti.
 
-## Katalogo hierarchija
-Elementai turi laukus: `cat` (Grupė), `family` (Šeima), `color` (Spalva), ir `sku` (Gamintojo kodas).
-Filtravimas vyksta pagal pasirinktą kelią.
+## PDF.js
+Puslapis bando:
+1. Vietinį `./vendor/pdf.mjs` + `./vendor/pdf.worker.mjs`, jei jie yra.
+2. Jei jų nėra — `cdn.jsdelivr.net` → `unpkg.com` (CDN).
+
+Jei organizacijos politikoje CDN draudžiami, įkelk `vendor/pdf.mjs` ir `vendor/pdf.worker.mjs` į repo.
 

@@ -6,21 +6,16 @@ h1 { font-size:18px; margin:0; }
 .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .button, button { border:1px solid #ddd; background:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; }
 .button { background:#111; color:#fff; border:none; }
-.button-outline { border:1px dashed #999; background:#fff; color:#111; }
-button:hover, .button:hover { filter:brightness(0.95); }
 .split { width:1px; height:24px; background:#e5e5e5; margin:0 4px; }
 main { display:grid; grid-template-columns:380px 1fr; min-height: calc(100vh - 56px); }
 aside { padding:16px; border-right:1px solid #eaeaea; background:#fff; overflow:auto; }
+.filters { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
 .catalog { display:grid; gap:8px; }
-.catalog-item { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px; border:1px solid #eee; border-radius:10px; background:#fff; cursor:pointer; }
-.catalog-item .left { display:flex; align-items:center; gap:8px; }
+.catalog-item { display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #eee; border-radius:10px; cursor:pointer; background:#fff; }
 .catalog-item.active { outline:2px solid #111; }
 .catalog-icon { font-size:18px; width:22px; text-align:center; }
 .catalog-meta { display:grid; line-height:1.1; }
 .catalog-meta small { color:#666; }
-.tree-filters { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom: 10px; }
-.tree-filters label { display:grid; gap:4px; font-size:12px; color:#555; }
-.tree-filters select { padding:6px 8px; border:1px solid #ddd; border-radius:8px; }
 .tools { display:grid; gap:6px; }
 #stage { position:relative; display:grid; place-items:center; min-height: calc(100vh - 56px); padding: 12px; }
 #pdfCanvas, #annoCanvas { position:absolute; top:0; left:0; max-width:100%; height:auto; }
@@ -36,8 +31,8 @@ aside { padding:16px; border-right:1px solid #eaeaea; background:#fff; overflow:
 .status { font-size:12px; color:#444; background:#eef; padding:8px; border-radius:6px; }
 dialog::backdrop { background: rgba(0,0,0,.35); }
 dialog { border:none; border-radius:12px; padding:0; }
-.catalog-form { padding:16px; width: min(1100px, 95vw); }
-.catalog-form h3 { margin:0 0 12px 0; }
+.catalog-form { padding:16px; width: min(1100px, 92vw); }
+.catalog-form h3 { margin:0 0 12px; }
 .cat-table { width:100%; border-collapse: collapse; }
 .cat-table th, .cat-table td { border-bottom: 1px solid #eee; padding:6px 4px; font-size:14px; }
 .cat-table input { width: 100%; padding:6px 8px; border:1px solid #ddd; border-radius:8px; }
