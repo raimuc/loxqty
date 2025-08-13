@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="utf-8" />
+  <title>loxqty — Išmanaus namo sąmatų braižyklė</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- PDF.js ESM: įkelk vendor/pdf.mjs ir vendor/pdf.worker.mjs -->
+  <script type="module">
+    import * as pdfjsLib from './vendor/pdf.mjs';
+    const workerURL = new URL('./vendor/pdf.worker.mjs', import.meta.url).toString();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerURL;
+    window.pdfjsLib = pdfjsLib;
+    console.log('[init] pdfjsLib OK, workerSrc=', workerURL);
+  </script>
+</head>
+<body>
+  <header>
+    <h1>loxqty — Sąmatų braižyklė</h1>
+    <div class="actions">
+      <label class="button">
+        Įkelti PDF
+        <input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden />
+      </label>
+      <button id="prevPage" title="Ankstesnis puslapis">◀</button>
+      <span id="pageInfo">—</span>
+      <button id="nextPage" title="Kitas puslapis">▶</button>
+      <button id="setScale" title="Nustatyti mastelį">Mastelis</button>
+      <button id="exportCSV" title="Eksportuoti kiekius">CSV</button>
+      <button id="exportPNGs" title="PNG (visi puslapiai)">PNG</button>
+      <button id="exportPDF" title="PDF (per spausdinimą)">PDF</button>
+      <button id="saveProject" title="Išsaugoti projektą su PDF">Išsaugoti projektą</button>
+      <label class="button">
+        Įkelti projektą
+        <input id="loadProject" type="file" accept="application/json" hidden />
+      </label>
+      <button id="downloadOriginalPdf" title="Atsisiųsti originalų PDF">Atsisiųsti PDF</button>
+      <span class="spacer"></span>
+      <button id="editCatalogBtn" class="secondary">Redaguoti katalogą…</button>
+      <button id="exportCatalogBtn" class="secondary">Katalogas → JSON</button>
+      <label class="button secondary">
+        Įkelti katalogą
+        <input id="importCatalogInput" type="file" accept="application/json" hidden />
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <h2>Elementų katalogas</h2>
+      <div id="catalog" class="catalog"></div>
+
+      <div class="hr"></div>
+      <div class="tools">
+        <h2>Įrankiai</h2>
+        <label><input id="snap" type="checkbox" checked> Tvirtinti prie 45°/90° (linijoms)</label><br/>
+        <button id="undo">Atšaukti paskutinį</button>
+        <button id="clearPage">Išvalyti šį puslapį</button>
+        <p class="hint">
+          • Spausk ant plano – padėsi žymą (pasirinkus elementą).<br/>
+          • Laikyk <b>Shift</b> ir vilk – nubrėši liniją (pvz., kabelį).<br/>
+          • <b>Dešinis</b> pelės mygtukas ant žymos – ištrinti.<br/>
+          • Vilk žymą su <b>Option/Alt</b> – perkelti.
+        </p>
+      </div>
+
+      <div class="hr"></div>
+      <h2>Mastelis</h2>
+      <p>Dabartinis: <span id="scaleLabel">nenustatytas</span></p>
+
+      <div class="hr"></div>
+      <h2>Kiekiai</h2>
+      <table id="totals">
+        <thead><tr><th>Tipas</th><th>Vnt</th><th>€/vnt</th><th>Suma</th></tr></thead>
+        <tbody></tbody>
+        <tfoot><tr><td colspan="3" style="text-align:right"><b>Iš viso</b></td><td id="grandTotal">0</td></tr></tfoot>
+      </table>
+
+      <div class="hr"></div>
+      <h2>Diagnozė</h2>
+      <div id="status" class="status">
+        PDF: <span id="diagPdfName">—</span><br/>
+        PDF baitai: <span id="diagPdfBytes">0</span><br/>
+        Įterptas projekte: <span id="diagEmbedded">Ne</span><br/>
+        Įtraukti katalogą į projektą: <label><input id="includeCatalogInProject" type="checkbox" checked> Taip</label>
+      </div>
+    </aside>
+
+    <section id="stage">
+      <div id="dropHint" class="drop-hint">Įkelk PDF (arba vilk–n–mesk čia)</div>
+      <canvas id="pdfCanvas"></canvas>
+      <canvas id="annoCanvas"></canvas>
+      <div id="tooltip" class="tooltip" hidden></div>
+    </section>
+  </main>
+
+  <!-- Katalogo redagavimo modalas -->
+  <div id="catalogModal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Katalogas</h3>
+        <button id="closeCatalog" class="icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <table class="cat-table">
+          <thead><tr><th>ID</th><th>Pavadinimas</th><th>Vnt</th><th>Kaina (€)</th><th>Ikona</th><th></th></tr></thead>
+          <tbody id="catTableBody"></tbody>
+        </table>
+        <button id="addRow">+ Pridėti</button>
+      </div>
+      <div class="modal-footer">
+        <button id="resetCatalog" class="danger">Atstatyti į numatytą</button>
+        <span class="spacer"></span>
+        <button id="saveCatalog" class="primary">Išsaugoti</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
