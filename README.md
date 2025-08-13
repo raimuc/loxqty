@@ -1,21 +1,18 @@
-# loxqty — GitHub Pages build
+# loxqty (GitHub Pages)
 
-**Kaip paleisti**
+- PDF brėžinių anotavimas ir sąmatų skaičiavimas.
+- Katalogas su **hierarchija** (Grupė → Šeima → Spalva) ir **gamintojo kodu (SKU)**.
+- Katalogo redagavimas rankiniu būdu (LocalStorage) + import/export JSON.
+- Projektų išsaugojimas su **įterptu PDF** (base64) — atidarius `.json`, PDF nereikia rinkti.
+- PNG eksportas (po puslapį) ir PDF eksportas (per spausdinimo dialogą).
 
-1. Į šio repo *šaknį* įkelk šiuos failus: `index.html`, `app.js`, `style.css`, `.nojekyll`, ir aplanką `vendor/`.
-2. Į `vendor/` įkelk **PDF.js ESM** failus: `pdf.mjs` ir `pdf.worker.mjs`.
-3. Repo **Settings → Pages** → Source: *Deploy from a branch*, Branch: `main`, Folder: `/ (root)`.
-4. Tavo puslapis bus pasiekiamas per `https://<vartotojas>.github.io/<repo>/`.
+## GitHub Pages
+- Failai veikia iš karto; PDF.js kraunamas iš `./vendor/pdf.mjs`, o jei jo nėra — automatiškai iš CDN.
+- Jei reikia „offline“, įkelk į `vendor/`:
+  - `pdf.mjs`
+  - `pdf.worker.mjs`
 
-**Funkcionalumas**
+## Katalogo hierarchija
+Elementai turi laukus: `cat` (Grupė), `family` (Šeima), `color` (Spalva), ir `sku` (Gamintojo kodas).
+Filtravimas vyksta pagal pasirinktą kelią.
 
-- PDF įkėlimas (failas įterpiamas į projektą kaip base64).
-- Žymų (elementų) dėjimas, linijų braižymas (laikant Shift), undo, clear.
-- Kiekiai + CSV eksportas.
-- Eksportas į PNG (po puslapį) ir į PDF (per spausdinimo dialogą).
-- Projekto išsaugojimas į `.json`, kuriame yra **įterptas PDF** + anotacijos.
-- Projekto įkėlimas: atkuriamas ir PDF, ir žymos.
-- **Katalogo redagavimas** (inline modalas) su išsaugojimu `localStorage` + import/export JSON.
-- Pasirinktinai: įtraukti katalogą į konkretų projektą (checkbox „Įtraukti katalogą į projektą“).
-
-> Pastaba: GitHub Pages nenaudos CDN. Būtinai pridėk `vendor/pdf.mjs` ir `vendor/pdf.worker.mjs` į repo.
