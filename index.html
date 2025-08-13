@@ -3,33 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>loxqty — Išmanaus namo sąmatų braižyklė</title>
+  <title>loxqty — On/Off → Relay Extension (14)</title>
   <link rel="stylesheet" href="style.css" />
   <script type="module">
-    // PDF.js loader: local vendor first, then CDN fallbacks.
+    // PDF.js loader: local first, then CDN fallbacks
     async function loadPdfJs() {
-      const local = './vendor/pdf.mjs';
-      const cdns = [
+      const tries = [
+        './vendor/pdf.mjs',
         'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.mjs',
         'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.mjs'
       ];
-      const tries = [local, ...cdns];
-      let lastErr = null;
+      let lastErr=null;
       for (const url of tries) {
         try {
           const mod = await import(url);
-          mod.GlobalWorkerOptions.workerSrc = url.replace('pdf.mjs','pdf.worker.mjs');
+          const worker = url.replace('pdf.mjs', 'pdf.worker.mjs');
+          mod.GlobalWorkerOptions.workerSrc = worker;
           console.log('[pdfjs] loaded from', url);
           return mod;
-        } catch (e) {
-          lastErr = e;
-          console.warn('[pdfjs] failed', url, e?.message || e);
-        }
+        } catch(e){ lastErr=e; console.warn('[pdfjs] failed', url, e?.message||e); }
       }
       throw lastErr || new Error('Nepavyko užkrauti PDF.js');
     }
-    const pdfReady = loadPdfJs().then(mod => (window.pdfjsLib = mod));
-    window.__pdfReady = pdfReady;
+    loadPdfJs().then(m => window.pdfjsLib=m).catch(err => {
+      console.error(err);
+      alert('PDF.js neįkeltas. Įkelk vendor/pdf.mjs ir vendor/pdf.worker.mjs arba patikrink internetą.');
+    });
   </script>
 </head>
 <body>
@@ -40,20 +39,16 @@
         Įkelti PDF
         <input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden />
       </label>
-      <button id="prevPage" title="Ankstesnis puslapis">◀</button>
-      <span id="pageInfo">—</span>
-      <button id="nextPage" title="Kitas puslapis">▶</button>
-      <button id="setScale" title="Nustatyti mastelį">Mastelis</button>
-      <button id="exportCSV" title="Eksportuoti kiekius (CSV)">CSV</button>
-      <button id="exportPNGs" title="PNG (visi puslapiai)">PNG</button>
-      <button id="exportPDF" title="PDF (per spausdinimą)">PDF</button>
-      <button id="saveProject" title="Išsaugoti projektą su PDF">Išsaugoti projektą</button>
+      <button id="prevPage">◀</button><span id="pageInfo">—</span><button id="nextPage">▶</button>
+      <button id="setScale">Mastelis</button>
+      <button id="exportCSV">CSV</button>
+      <button id="exportPNGs">PNG</button>
+      <button id="exportPDF">PDF</button>
+      <button id="saveProject">Išsaugoti projektą</button>
       <label class="button">
         Įkelti projektą
         <input id="loadProject" type="file" accept="application/json" hidden />
       </label>
-      <div class="split"></div>
-      <button id="downloadOriginal" title="Atsisiųsti įkeltą originalų PDF">Atsisiųsti PDF</button>
       <button id="openCatalog">Katalogas…</button>
     </div>
   </header>
@@ -62,41 +57,24 @@
     <aside>
       <h2>Filtrai</h2>
       <div class="filters">
-        <label>Grupė <select id="fGroup"><option value="">—</option></select></label>
-        <label>Šeima <select id="fFamily"><option value="">—</option></select></label>
-        <label>Spalva <select id="fColor"><option value="">—</option></select></label>
+        <select id="fGroup"><option value="">Grupė</option></select>
+        <select id="fFamily"><option value="">Šeima</option></select>
+        <select id="fColor"><option value="">Spalva</option></select>
       </div>
-
-      <div class="hr"></div>
-      <h2>Elementų katalogas</h2>
       <div id="catalog" class="catalog"></div>
-
       <div class="hr"></div>
       <div class="tools">
-        <h2>Įrankiai</h2>
-        <label><input id="snap" type="checkbox" checked> Tvirtinti prie 45°/90° (linijoms)</label><br/>
+        <label><input id="snap" type="checkbox" checked> Snap 45°/90°</label>
         <button id="undo">Atšaukti</button>
         <button id="clearPage">Išvalyti puslapį</button>
-        <p class="hint">
-          • Pasirink elementą ir spausk ant plano — padėsi žymą.<br/>
-          • Laikyk <b>Shift</b> ir vilk — braižyk liniją (pvz., kabelį).<br/>
-          • <b>Dešinis</b> pelės ant žymos — trinti.<br/>
-          • <b>Option/Alt</b> + vilk — perkelti žymą.
-        </p>
       </div>
-
-      <div class="hr"></div>
-      <h2>Mastelis</h2>
-      <p>Dabartinis: <span id="scaleLabel">nenustatytas</span></p>
-
       <div class="hr"></div>
       <h2>Kiekiai</h2>
       <table id="totals">
-        <thead><tr><th>Tipas</th><th>SKU</th><th>Vnt</th><th>€/vnt</th><th>Suma</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Tipas</th><th>Vnt</th><th>€/vnt</th><th>Suma</th></tr></thead>
         <tbody></tbody>
         <tfoot><tr><td colspan="4" style="text-align:right"><b>Iš viso</b></td><td id="grandTotal">0</td></tr></tfoot>
       </table>
-
       <div class="hr"></div>
       <div id="status" class="status">Status: laukiu PDF…</div>
     </aside>
@@ -109,14 +87,11 @@
     </section>
   </main>
 
-  <!-- Catalog editor modal -->
   <dialog id="catalogModal">
-    <form method="dialog" class="catalog-form" id="catalogForm">
+    <form method="dialog" id="catalogForm" class="catalog-form">
       <h3>Katalogo redagavimas</h3>
       <table class="cat-table">
-        <thead>
-          <tr><th>ID</th><th>Pavadinimas</th><th>Grupė</th><th>Šeima</th><th>Spalva</th><th>SKU</th><th>Vnt</th><th>Kaina</th><th>Ikona</th><th></th></tr>
-        </thead>
+        <thead><tr><th>ID</th><th>SKU</th><th>Pavadinimas</th><th>Grupė</th><th>Šeima</th><th>Spalva</th><th>Vnt</th><th>Kaina</th><th>Ikona</th><th></th></tr></thead>
         <tbody id="catRows"></tbody>
       </table>
       <div class="row">
