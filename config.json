@@ -1,0 +1,7 @@
+{
+  "iconMaxPx": 32,
+  "thumbnailPx": 64,
+  "snapAngles": [0, 45, 90, 135, 180],
+  "pdf": { "preferLocalPdfJs": true },
+  "ui": { "showDebug": false }
+}
