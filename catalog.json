@@ -1,0 +1,68 @@
+[
+  {
+    "id": "relay_ext",
+    "sku": "100200",
+    "type": "capacity",
+    "label": "Relay Extension (14 rel.)",
+    "group": "Valdikliai",
+    "family": "Relay",
+    "color": "—",
+    "unit": "vnt",
+    "price": 0,
+    "icon": "🔗",
+    "capKey": "relay",
+    "capSize": 14
+  },
+  {
+    "id": "dali_ext",
+    "sku": "100300",
+    "type": "capacity",
+    "label": "DALI Extension (64 addr.)",
+    "group": "Valdikliai",
+    "family": "DALI",
+    "color": "—",
+    "unit": "vnt",
+    "price": 0,
+    "icon": "🖧",
+    "capKey": "dali",
+    "capSize": 64
+  },
+  {
+    "id": "light_onoff",
+    "sku": "200100",
+    "type": "device",
+    "label": "On/Off šviestuvas",
+    "group": "Apšvietimas",
+    "family": "On/Off",
+    "color": "Balta",
+    "unit": "vnt",
+    "price": 0,
+    "icon": "💡",
+    "requires": [{ "type": "capacity", "cap": "relay", "per": 1 }]
+  },
+  {
+    "id": "light_dali",
+    "sku": "200110",
+    "type": "device",
+    "label": "DALI šviestuvas",
+    "group": "Apšvietimas",
+    "family": "DALI",
+    "color": "Balta",
+    "unit": "vnt",
+    "price": 0,
+    "icon": "💡",
+    "requires": [{ "type": "capacity", "cap": "dali", "per": 1 }]
+  },
+  {
+    "id": "touch",
+    "sku": "300100",
+    "type": "device",
+    "label": "Touch Tree",
+    "group": "Valdikliai",
+    "family": "Tree",
+    "color": "Balta",
+    "unit": "vnt",
+    "price": 0,
+    "icon": "🖐️"
+  }
+]
